@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="bizbar">
+  <h1 style="margin:0">Reports</h1>
+  <form method="get" action="/reports"><select name="business_id" onchange="this.form.submit()">
+    {% for b in businesses %}<option value="{{ b.id }}" {% if b.id==business.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+  </select></form>
+  <form method="post" action="/reports/generate" style="margin:0">
+    <input type="hidden" name="business_id" value="{{ business.id }}">
+    <button class="btn" type="submit">Generate now</button>
+  </form>
+</div>
+{% if not smtp_on %}<p class="muted">Email delivery is off (SMTP not configured) — reports still generate and download below.</p>{% endif %}
+<table class="tbl">
+  <tr><th>Generated</th><th>File</th><th></th></tr>
+  {% for r in reports %}
+  <tr>
+    <td class="muted">{{ r.sent_at[:16].replace('T',' ') }}</td>
+    <td><a href="/reports/files/{{ r.filename }}?business_id={{ business.id }}">{{ r.filename }}</a></td>
+    <td><a class="btn" href="/reports/files/{{ r.filename }}?business_id={{ business.id }}&download=1">Download</a></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="3" class="muted">No reports yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

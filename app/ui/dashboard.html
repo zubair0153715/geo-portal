@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — {{ business.name }}{% endblock %}
+{% block content %}
+<div class="bizbar">
+  <h1 style="margin:0">{{ business.name }}</h1>
+  <form method="get" action="/dashboard"><select name="business_id" onchange="this.form.submit()">
+    {% for b in businesses %}<option value="{{ b.id }}" {% if b.id==business.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+  </select></form>
+  <span class="muted">{{ business.website }}</span>
+</div>
+
+<div class="two">
+  <div class="card">
+    <div class="score">{% if score_7d is not none %}{{ score_7d }}<small>/100</small>{% else %}—<small>no data yet</small>{% endif %}</div>
+    <p class="muted">7-day average visibility score across all AI checks.</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">Daily score trend</h3>
+    <canvas id="trend" height="140"></canvas>
+  </div>
+</div>
+
+<h2>Competitors spotted in AI answers</h2>
+{% if competitors %}
+<p>{{ competitors|join(', ') }}</p>
+{% else %}<p class="muted">None detected yet — run some checks first.</p>{% endif %}
+
+<h2>Latest checks</h2>
+<table class="tbl">
+  <tr><th>When</th><th>AI</th><th>Phrase</th><th>Mentioned?</th><th>Score</th></tr>
+  {% for c in recent_checks %}
+  <tr>
+    <td class="muted">{{ c.ran_at[:16].replace('T',' ') }}</td>
+    <td>{{ labels.get(c.provider_ai, c.provider_ai) }}</td>
+    <td>{{ c.phrase }}</td>
+    <td>{% if c.mention_bool %}<span class="badge connected">yes</span>{% else %}<span class="badge not_configured">no</span>{% endif %}</td>
+    <td>{{ c.score }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h2>Manual check (no API key needed)</h2>
+<div class="two">
+  <div class="card">
+    <form method="post" action="/manual-check" class="form">
+      <input type="hidden" name="business_id" value="{{ business.id }}">
+      <label>Phrase asked <input name="phrase" required placeholder="best dental clinic in Karachi"></label>
+      <label>AI answer (paste from ChatGPT / Perplexity / Gemini)
+        <textarea name="answer" rows="6" required></textarea></label>
+      <button class="btn" type="submit">Analyse &amp; save</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">Copy-paste prompt pack</h3>
+    <p class="muted">Neutral prompts — they never name your business, so the measurement stays honest.</p>
+    <pre class="prompts">{% for p in pack_prompts %}• {{ p }}
+
+{% endfor %}</pre>
+  </div>
+</div>
+
+<script>
+const trend = JSON.parse('{{ trend_json|safe }}');
+new Chart(document.getElementById('trend'), {
+  type: 'line',
+  data: { labels: trend.map(d=>d.date),
+    datasets: [{ label:'Visibility score', data: trend.map(d=>d.score),
+      borderColor:'#5aa2ff', tension:0.3, spanGaps:true }]},
+  options: { scales:{ y:{ min:0, max:100 } }, plugins:{ legend:{ display:false } } }
+});
+</script>
+{% endblock %}

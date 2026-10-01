@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}AI Visibility Portal{% endblock %}</title>
+<meta name="description" content="{% block meta_description %}Track whether ChatGPT, Perplexity and Gemini mention your business — daily AI visibility reports for small businesses.{% endblock %}">
+<meta property="og:title" content="{% block og_title %}AI Visibility Portal — get found by AI search{% endblock %}">
+<meta property="og:description" content="{% block og_description %}Daily checks of whether ChatGPT, Perplexity and Gemini recommend your business, with competitor tracking and fix-it reports.{% endblock %}">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">◉ AI Visibility Portal</a>
+  <nav>
+    {% if user %}
+      <a href="/dashboard">Dashboard</a>
+      <a href="/connections">Connections</a>
+      <a href="/agents">Agents</a>
+      <a href="/reports">Reports</a>
+      <a href="/inbox">Inbox</a>
+      <a href="/settings">Settings</a>
+      <span class="who">{{ user.email }}</span>
+      <a href="/logout">Logout</a>
+    {% else %}
+      <a href="/login">Login</a>
+      <a class="btn" href="/signup">Sign up</a>
+    {% endif %}
+  </nav>
+</header>
+{% if demo_mode %}
+<div class="demo-banner">DEMO MODE — canned data, no real credentials. Login: demo@geo-portal.local / demo1234</div>
+{% endif %}
+<main class="wrap">
+{% block content %}{% endblock %}
+</main>
+<footer class="foot">Self-hosted AI-search visibility portal. Your credentials stay on your server.</footer>
+
+<!-- AI client agent chat widget (on every page, landing included) -->
+<button id="chat-fab" aria-label="Chat with the AI assistant" title="Chat with us">💬</button>
+<div id="chat-panel" hidden>
+  <div id="chat-head"><span>AI Assistant</span><span id="chat-mode"></span><button id="chat-close" aria-label="Close chat">×</button></div>
+  <div id="chat-msgs"></div>
+  <div id="chat-leadform" hidden>
+    <p class="chat-note">Tell us who you are to start chatting:</p>
+    <input id="lead-name" placeholder="Your name">
+    <input id="lead-email" placeholder="Email" type="email">
+    <input id="lead-business" placeholder="Business name">
+    <button id="lead-start" class="btn">Start chat</button>
+    <p id="lead-err" class="chat-err"></p>
+  </div>
+  <div id="chat-offline" hidden>
+    <p class="chat-note">The AI agent is currently <b>offline</b> — no AI provider key is configured yet. Leave your details and the owner will reply personally.</p>
+    <input id="off-name" placeholder="Your name">
+    <input id="off-email" placeholder="Email" type="email">
+    <input id="off-business" placeholder="Business name">
+    <button id="off-send" class="btn">Leave my details</button>
+    <p id="off-err" class="chat-err"></p>
+    <p id="off-done" class="chat-note" hidden>Thanks — saved. We'll be in touch.</p>
+  </div>
+  <div id="chat-inputrow" hidden>
+    <input id="chat-input" placeholder="Type your message…" autocomplete="off">
+    <button id="chat-send" class="btn">Send</button>
+  </div>
+</div>
+<script>
+(function(){
+  var LOGGED_IN = {{ 'true' if user else 'false' }};
+  var fab = document.getElementById('chat-fab'),
+      panel = document.getElementById('chat-panel'),
+      msgs = document.getElementById('chat-msgs'),
+      leadForm = document.getElementById('chat-leadform'),
+      offlineBox = document.getElementById('chat-offline'),
+      inputRow = document.getElementById('chat-inputrow'),
+      input = document.getElementById('chat-input'),
+      modeTag = document.getElementById('chat-mode');
+  var convId = sessionStorage.getItem('support_conv') || null;
+  var leadInfo = JSON.parse(sessionStorage.getItem('support_lead') || 'null');
+  var statusCache = null, opened = false;
+
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function addMsg(who, text){
+    var d = document.createElement('div');
+    d.className = 'chat-msg ' + who;
+    d.innerHTML = esc(text).replace(/\n/g,'<br>');
+    msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
+  }
+  function show(el){ el.hidden = false; } function hide(el){ el.hidden = true; }
+
+  function getStatus(cb){
+    if (statusCache) return cb(statusCache);
+    fetch('/api/support/status').then(function(r){ return r.json(); }).then(function(s){
+      statusCache = s; cb(s);
+    }).catch(function(){ cb({online:false, demo:false, logged_in:LOGGED_IN}); });
+  }
+
+  function startChat(){
+    hide(leadForm); hide(offlineBox);
+    if (!convId) addMsg('assistant', statusCache.demo
+      ? 'Hi! I’m the demo assistant — my replies are canned samples, clearly labeled [demo]. How can I help?'
+      : 'Hi! I’m the portal’s AI assistant. I can explain what this portal does, help you connect Google or WordPress, or walk through your visibility report. What’s on your mind?');
+    show(inputRow); input.focus();
+  }
+
+  fab.addEventListener('click', function(){
+    panel.hidden = !panel.hidden;
+    if (panel.hidden || opened) return;
+    opened = true;
+    getStatus(function(s){
+      if (s.demo) modeTag.textContent = 'demo';
+      if (!s.online) { hide(leadForm); hide(inputRow); show(offlineBox); return; }
+      if (!LOGGED_IN && !leadInfo) { hide(offlineBox); hide(inputRow); show(leadForm); return; }
+      startChat();
+    });
+  });
+  document.getElementById('chat-close').addEventListener('click', function(){ panel.hidden = true; });
+
+  function saveLead(prefix, errEl, done){
+    var name = document.getElementById(prefix+'-name').value.trim(),
+        email = document.getElementById(prefix+'-email').value.trim(),
+        business = document.getElementById(prefix+'-business').value.trim();
+    errEl.textContent = '';
+    fetch('/api/support/lead', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name:name, email:email, business:business})})
+      .then(function(r){ return r.json(); }).then(function(d){
+        if (!d.ok) { errEl.textContent = d.error || 'Could not save. Check the email.'; return; }
+        leadInfo = {name:name, email:email, business:business, lead_id:d.lead_id};
+        sessionStorage.setItem('support_lead', JSON.stringify(leadInfo));
+        done();
+      }).catch(function(){ errEl.textContent = 'Network error — try again.'; });
+  }
+  document.getElementById('lead-start').addEventListener('click', function(){
+    saveLead('lead', document.getElementById('lead-err'), startChat);
+  });
+  document.getElementById('off-send').addEventListener('click', function(){
+    saveLead('off', document.getElementById('off-err'), function(){
+      document.getElementById('off-done').hidden = false;
+    });
+  });
+
+  function send(){
+    var text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    addMsg('user', text);
+    var payload = {message:text, conversation_id: convId};
+    if (!convId && leadInfo && !LOGGED_IN) payload.visitor = leadInfo;
+    fetch('/api/support/chat', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)})
+      .then(function(r){ return r.json(); }).then(function(d){
+        if (d.error) { addMsg('assistant', 'Sorry — ' + d.error); return; }
+        convId = d.conversation_id;
+        sessionStorage.setItem('support_conv', String(convId));
+        addMsg('assistant', d.reply);
+        if (d.escalated) addMsg('assistant', '— flagged for the owner to follow up.');
+        if (d.offline) { hide(inputRow); show(offlineBox); }
+      }).catch(function(){ addMsg('assistant', 'Network error — please try again.'); });
+  }
+  document.getElementById('chat-send').addEventListener('click', send);
+  input.addEventListener('keydown', function(e){ if (e.key === 'Enter') send(); });
+})();
+</script>
+</body>
+</html>

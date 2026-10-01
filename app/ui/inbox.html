@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Client Inbox — AI Visibility Portal{% endblock %}
+{% block content %}
+<h1>Client Inbox</h1>
+<p class="chat-note">Leads, escalations and chat conversations handled by the AI client agent. Pricing, contracts, refunds and guarantees always escalate here instead of being answered by the AI.</p>
+
+<h2>Open escalations</h2>
+{% set open_escs = escalations | selectattr("status", "equalto", "open") | list %}
+{% if open_escs %}
+<table class="tbl">
+  <tr><th>#</th><th>Reason</th><th>From</th><th>Summary</th><th>At</th><th></th></tr>
+  {% for e in open_escs %}
+  <tr>
+    <td>{{ e.id }}</td>
+    <td><span class="badge error">{{ e.reason }}</span></td>
+    <td>{{ e.lead_name or '' }} {{ (e.lead_email or e.user_email) or '' }}</td>
+    <td>{{ e.summary }}</td>
+    <td>{{ e.created_at[:16].replace('T',' ') }}</td>
+    <td style="white-space:nowrap">
+      <a class="btn ghost" href="/inbox/conversations/{{ e.conversation_id }}">View chat</a>
+      <form method="post" action="/inbox/escalations/{{ e.id }}/handled" style="display:inline">
+        <button class="btn" type="submit">Mark handled</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="chat-note">No open escalations. 🎉</p>
+{% endif %}
+
+{% set done_escs = escalations | selectattr("status", "equalto", "handled") | list %}
+{% if done_escs %}
+<h3>Handled</h3>
+<table class="tbl">
+  <tr><th>#</th><th>Reason</th><th>From</th><th>Summary</th><th>Handled</th><th></th></tr>
+  {% for e in done_escs %}
+  <tr>
+    <td>{{ e.id }}</td>
+    <td>{{ e.reason }}</td>
+    <td>{{ e.lead_name or '' }} {{ (e.lead_email or e.user_email) or '' }}</td>
+    <td>{{ e.summary }}</td>
+    <td>{{ (e.handled_at or '')[:16].replace('T',' ') }}</td>
+    <td><a class="btn ghost" href="/inbox/conversations/{{ e.conversation_id }}">View chat</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+<h2>Leads</h2>
+{% if leads %}
+<table class="tbl">
+  <tr><th>#</th><th>Name</th><th>Email</th><th>Business</th><th>Source</th><th>Status</th><th>Captured</th><th></th></tr>
+  {% for l in leads %}
+  <tr>
+    <td>{{ l.id }}</td>
+    <td>{{ l.name }}</td>
+    <td>{{ l.email }}</td>
+    <td>{{ l.business }}</td>
+    <td>{{ l.source }}</td>
+    <td><span class="badge {{ 'connected' if l.status == 'client' else 'not_configured' }}">{{ l.status }}</span></td>
+    <td>{{ l.created_at[:16].replace('T',' ') }}</td>
+    <td>
+      <form method="post" action="/inbox/leads/{{ l.id }}/status" style="display:flex;gap:6px">
+        <select name="status">
+          {% for s in ['new','contacted','client','dropped'] %}
+          <option value="{{ s }}" {% if l.status == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn ghost" type="submit">Set</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="chat-note">No leads yet — they appear here when a visitor starts a chat.</p>
+{% endif %}
+
+<h2>Recent conversations</h2>
+{% if conversations %}
+<table class="tbl">
+  <tr><th>#</th><th>Who</th><th>Messages</th><th>Updated</th><th></th></tr>
+  {% for c in conversations %}
+  <tr>
+    <td>{{ c.id }}</td>
+    <td>{{ c.lead_name or '' }} {{ (c.lead_email or c.user_email) or 'visitor' }}</td>
+    <td>{{ c.msg_count }}</td>
+    <td>{{ c.updated_at[:16].replace('T',' ') }}</td>
+    <td><a class="btn ghost" href="/inbox/conversations/{{ c.id }}">Read</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="chat-note">No conversations yet.</p>
+{% endif %}
+{% endblock %}

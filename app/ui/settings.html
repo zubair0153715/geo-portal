@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="bizbar">
+  <h1 style="margin:0">Settings</h1>
+  <form method="get" action="/settings"><select name="business_id" onchange="this.form.submit()">
+    {% for b in businesses %}<option value="{{ b.id }}" {% if b.id==business.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+  </select></form>
+</div>
+<h2>AI provider keys</h2>
+<p class="muted">Encrypted in the vault on save. The key itself is never shown again — only its status.</p>
+{% for p, label in labels.items() %}
+<div class="card" style="margin-bottom:12px">
+  <div class="kv"><b>{{ label }}</b> <span class="badge {{ conn[p] }}">{{ conn[p].replace('_',' ') }}</span></div>
+  <form method="post" action="/settings/keys" class="form" style="flex-direction:row;gap:8px;align-items:end">
+    <input type="hidden" name="business_id" value="{{ business.id }}">
+    <input type="hidden" name="provider" value="{{ p }}">
+    <label style="flex:1">API key <input type="password" name="api_key" placeholder="paste key" autocomplete="off"></label>
+    <button class="btn" type="submit">Save</button>
+  </form>
+  {% if conn[p]=='connected' %}
+  <form method="post" action="/settings/keys/delete" style="margin-top:8px">
+    <input type="hidden" name="business_id" value="{{ business.id }}">
+    <input type="hidden" name="provider" value="{{ p }}">
+    <button class="btn danger" type="submit">Remove key</button>
+  </form>
+  {% endif %}
+</div>
+{% endfor %}
+<h2>Where to get keys</h2>
+<ul class="muted">
+  <li><b>OpenAI</b> — platform.openai.com → API keys (paid, pay-as-you-go).</li>
+  <li><b>Perplexity</b> — docs.perplexity.ai → API keys (paid).</li>
+  <li><b>Gemini</b> — aistudio.google.com → Get API key (<b>free tier</b> available, rate-limited — good for trials).</li>
+</ul>
+<p class="muted">Google OAuth and WordPress are managed on the <a href="/connections?business_id={{ business.id }}">Connections page</a>.</p>
+{% endblock %}

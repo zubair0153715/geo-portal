@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Add your business{% endblock %}
+{% block content %}
+<h1>Add your business</h1>
+<p class="muted">The Scout agent will ask AI providers these exact customer phrases every day.</p>
+{% if error %}<p class="err">{{ error }}</p>{% endif %}
+<form method="post" class="form">
+  <label>Business name <input name="name" required placeholder="e.g. Bright Smile Dental"></label>
+  <label>Website <input name="website" required placeholder="https://example.com"></label>
+  <label>Customer search phrases — one per line, up to 10
+    <textarea name="phrases" rows="10" required placeholder="best dental clinic in Karachi&#10;affordable teeth whitening Karachi&#10;painless root canal near me"></textarea>
+  </label>
+  <button class="btn" type="submit">Continue → connections</button>
+</form>
+{% endblock %}

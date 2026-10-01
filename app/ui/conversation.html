@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Conversation #{{ conv.id }} — Client Inbox{% endblock %}
+{% block content %}
+<p><a href="/inbox">← Back to Inbox</a></p>
+<h1>Conversation #{{ conv.id }} <span class="chat-note">(read-only)</span></h1>
+<div class="card">
+  {% for m in messages %}
+  <div class="chat-msg {{ m.role }}" style="margin:6px 0; max-width:100%">{{ m.text }}</div>
+  {% endfor %}
+  {% if not messages %}<p class="chat-note">No messages.</p>{% endif %}
+</div>
+{% endblock %}

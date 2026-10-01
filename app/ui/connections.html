@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Connections{% endblock %}
+{% block content %}
+<div class="bizbar">
+  <h1 style="margin:0">Connections</h1>
+  <form method="get" action="/connections"><select name="business_id" onchange="this.form.submit()">
+    {% for b in businesses %}<option value="{{ b.id }}" {% if b.id==business.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+  </select></form>
+</div>
+{% if google_ok %}<p class="okmsg">Google connected successfully.</p>{% endif %}
+
+<div class="card" style="margin-bottom:16px">
+  <h3>Google — Search Console + Business Profile <span class="badge {{ conn.google }}">{{ conn.google.replace('_',' ') }}</span></h3>
+  {% if not gsc_ready %}
+    <p class="muted">Not configured by the operator yet: GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are empty. See README setup task 1.</p>
+  {% elif conn.google == 'connected' %}
+    <form method="post" action="/connect/google/disconnect" style="display:inline">
+      <input type="hidden" name="business_id" value="{{ business.id }}">
+      <button class="btn danger" type="submit">Disconnect Google</button>
+    </form>
+  {% else %}
+    <p><a class="btn" href="/connect/google/start?business_id={{ business.id }}&scopes=gsc,gbp">Connect Google (both)</a></p>
+    <p class="muted">Or individually:
+      <a href="/connect/google/start?business_id={{ business.id }}&scopes=gsc">Search Console only</a> ·
+      <a href="/connect/google/start?business_id={{ business.id }}&scopes=gbp">Business Profile only</a>
+    </p>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-bottom:16px">
+  <h3>WordPress <span class="badge {{ conn.wordpress }}">{{ conn.wordpress.replace('_',' ') }}</span></h3>
+  {% if wp_error %}<p class="err">{{ wp_error }}</p>{% endif %}
+  <form method="post" action="/connections/wordpress" class="form">
+    <input type="hidden" name="business_id" value="{{ business.id }}">
+    <label>Site URL <input name="site_url" placeholder="https://example.com" required></label>
+    <label>Admin username <input name="username" required></label>
+    <label>Application Password <input type="password" name="app_password" required></label>
+    <button class="btn" type="submit">Verify &amp; save</button>
+  </form>
+  <p class="muted">Create one at: WP Admin → Users → Profile → Application Passwords. Revocable any time. Stored encrypted.</p>
+</div>
+
+<div class="card">
+  <h3>AI provider keys</h3>
+  <p class="muted">Keys are encrypted in the vault and only used for your own checks. Enter them on the <a href="/settings?business_id={{ business.id }}">Settings page</a>.</p>
+  <div class="kv">ChatGPT (OpenAI) <span class="badge {{ conn.openai }}">{{ conn.openai.replace('_',' ') }}</span></div>
+  <div class="kv">Perplexity <span class="badge {{ conn.perplexity }}">{{ conn.perplexity.replace('_',' ') }}</span></div>
+  <div class="kv">Gemini (Google) <span class="badge {{ conn.gemini }}">{{ conn.gemini.replace('_',' ') }}</span></div>
+</div>
+{% endblock %}

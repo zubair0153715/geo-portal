@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}AI Visibility Portal — get found by AI search{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Does ChatGPT mention your business?</h1>
+  <p class="lede">Customers now ask AI instead of Google. This portal checks every day
+  whether ChatGPT, Perplexity and Gemini recommend <em>you</em> — or your competitors —
+  and tells you exactly what to fix.</p>
+  <p><a class="btn big" href="/signup">Start free — self-hosted</a></p>
+</section>
+<section class="grid3">
+  <div class="card"><h3>🤖 Scout agent</h3><p>Asks your customer phrases on ChatGPT, Perplexity and Gemini every day and records who gets mentioned.</p></div>
+  <div class="card"><h3>📝 Content agent</h3><p>Audits your WordPress site and suggests pages (like an FAQ) that AI engines love to cite.</p></div>
+  <div class="card"><h3>📊 Reporter agent</h3><p>Builds a daily visibility report — score trend, mentions, competitors, Search Console highlights — and emails it to you.</p></div>
+</section>
+<section class="how">
+  <h2>How it works</h2>
+  <ol>
+    <li><b>Sign up</b> and add your business + the phrases customers search.</li>
+    <li><b>Connect</b> Google (Search Console + Business Profile), your WordPress site, and your AI provider keys.</li>
+    <li><b>Agents run daily.</b> Watch your visibility score climb on the dashboard.</li>
+  </ol>
+  <p>Built for small businesses that get customers from Google and word of mouth —
+  and now need to show up when people ask AI assistants for recommendations.
+  Instead of guessing, you see exactly which questions trigger a mention of your
+  business, which competitors get picked instead, and what to change on your site.</p>
+  <p class="muted">No fake data: anything not configured shows as “not configured”. You bring your own API keys, so checks cost you nothing extra beyond the providers' own billing.</p>
+</section>
+{% endblock %}

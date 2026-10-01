@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Agent team{% endblock %}
+{% block content %}
+<div class="bizbar">
+  <h1 style="margin:0">Agent team</h1>
+  <form method="get" action="/agents"><select name="business_id" onchange="this.form.submit()">
+    {% for b in businesses %}<option value="{{ b.id }}" {% if b.id==business.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+  </select></form>
+</div>
+<p class="muted">Agents run daily at 06:00 UTC. Last-run status comes from the scheduler log — never invented.</p>
+<div class="grid3">
+{% for a in agents %}
+  <div class="card">
+    <h3>{{ a.name }} agent</h3>
+    <p class="muted">{{ a.job }}</p>
+    {% if a.last %}
+      <span class="badge {% if a.last.status=='ok' %}connected{% elif a.last.status=='skipped' %}not_configured{% else %}error{% endif %}">{{ a.last.status }}</span>
+      <p class="muted">{{ a.last.ran_at[:16].replace('T',' ') }} — {{ a.last.detail }}</p>
+    {% else %}
+      <span class="badge not_configured">never ran</span>
+    {% endif %}
+  </div>
+{% endfor %}
+</div>
+<form method="post" action="/agents/run-now">
+  <input type="hidden" name="business_id" value="{{ business.id }}">
+  <button class="btn ghost" type="submit">▶ Run Scout now (uses your API keys)</button>
+</form>
+{% endblock %}
